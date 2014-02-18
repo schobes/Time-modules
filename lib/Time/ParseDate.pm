@@ -388,8 +388,23 @@ sub parsedate
 				# Just in case we are very close to a time
 				# change...
 				#
-				$tzadj = tz_local_offset($secs-$tzadj);
-				$secs -= $tzadj;
+				my $tzadj2 = tz_local_offset($secs - $tzadj);
+				if ($tzadj2 > $tzadj && tz_local_offset($secs - $tzadj2) == $tzadj) {
+					#
+					# To provide consistent handling of invalid 
+					# times, this forces the time forward when
+					# provided a date / time within the 
+					# perceived spring forward event of DST
+					# (example: from EST to EDT parsedate('02:30:00')
+					#  does not exist but turns to '01:30:00', 
+					#  instead of going to 03:30:00, similar to 
+					#  the behavior of parsedate('2011-02-31') which
+					#  would be 2011-03-03).
+					# 
+					$secs -= $tzadj;
+				} else {
+					$secs -= $tzadj2;
+				}
 			}
 		}
 	}
